@@ -49,5 +49,5 @@ step table head@(THead st tape n) =
      else step table head'
 
 main =
-  putStrLn . show $ step table (THead "A" [TOn, TOff] 0)
+  putStrLn . show . take 10 $ step table (THead "A" ([TOn, TOff] ++ (repeat TOff)) 0)
 
