@@ -1,26 +1,7 @@
 module Main where
 
-data TSymbol = TOn | TOff | TNot
-  deriving Eq
-data TDirection = TRight | TLeft
-data TRule = TRule String TSymbol TSymbol TDirection String
-type Ruleset = [TRule]
-type Tape a = [a]
-data TMove = TMove String TDirection TSymbol
-data THead = THead String (Tape TSymbol) Int
-
-instance Show TSymbol where
-  show TOn  = "1"
-  show TOff = "0"
-
-table = [(TRule "A" TOff TOff TRight "Z"),
-         (TRule "A" TOn  TOn  TRight "C"),
-         (TRule "Z" TOff TOff TRight "H"),
-         (TRule "Z" TOn  TOn  TLeft  "N"),
-         (TRule "C" TOff TOn  TLeft  "N"),
-         (TRule "C" TOn  TOff TLeft  "Y"),
-         (TRule "N" TNot TOff TRight "H"),
-         (TRule "Y" TNot TOn  TRight "H")]
+import Parse
+import Types
 
 ruleMatches :: String -> TSymbol -> TRule -> Bool
 ruleMatches st sym (TRule st' TNot _ _ _) = st' == st
@@ -34,6 +15,7 @@ getMove rs (THead st tape n) =
 moveDirection :: TDirection -> Int -> Int
 moveDirection TRight = (+1)
 moveDirection TLeft  = ((-)1)
+moveDirection TStay  = id
 
 set n x xs = let (fr, (b:bs)) = splitAt n xs in fr ++ [x] ++ bs
 
@@ -48,6 +30,12 @@ step table head@(THead st tape n) =
      then t'
      else step table head'
 
+simulateMachine :: Either ParseError (Tape TSymbol, Ruleset) -> Tape TSymbol
+simulateMachine (Right (tape, table)) =
+  step table (THead "A" tape 0)
+simulateMachine (Left error) = []
+
 main =
-  putStrLn . show . take 10 $ step table (THead "A" ([TOn, TOff] ++ (repeat TOff)) 0)
+  do ruleFile <- readFile "../examples/bit_add.turing"
+     putStrLn . show . take 10 $ simulateMachine (parseRulefile ruleFile)
 
