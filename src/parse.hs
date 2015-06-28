@@ -3,54 +3,46 @@ module Parse (parseRulefile, ParseError) where
 import Text.ParserCombinators.Parsec
 import Types
 
-symbolFromStr "0" = TOff
-symbolFromStr "1" = TOn
-symbolFromStr "_" = TNot
+symbolOpts = "01_"
+directionOpts = "RLN"
 
-directionFromStr "R" = TRight
-directionFromStr "L" = TLeft
-directionFromStr "N" = TStay
+symbolFromStr '0' = TOff
+symbolFromStr '1' = TOn
+symbolFromStr '_' = TNot
 
-eol :: GenParser Char st Char
+directionFromStr 'R' = TRight
+directionFromStr 'L' = TLeft
+directionFromStr 'N' = TStay
+
 eol = char '\n'
+
+tap :: Monad m => (a -> m b) -> a -> m a
+tap fn c = do fn c; return c
+blindTap fn c = do fn; return c
+
+spaceThen e = char ' ' >> e
 
 ruleFile :: GenParser Char st (Tape TSymbol, Ruleset)
 ruleFile = 
-  do tape <- parseTape
+  do tape <- parseSymbols >>= (blindTap eol)
      rules <- many parseRule
-     eof
-     return (tape, rules)
+     eof >> return (tape, rules)
 
-parseTape :: GenParser Char st (Tape TSymbol)
-parseTape =
-  do result <- parseSymbols
-     eol
-     return result
-                          
-parseSymbols :: GenParser Char st [TSymbol]
+parseDirection = fmap directionFromStr $ oneOf directionOpts
+parseSymbol = fmap symbolFromStr $ oneOf symbolOpts
 parseSymbols = 
-  do first <- oneOf "01_"
-     next <- remainingSymbols
-     return ((symbolFromStr [first]) : next)
-
-remainingSymbols :: GenParser Char st [TSymbol]
-remainingSymbols =
-    (char ' ' >> parseSymbols)
-    <|> (return [])
+  do first <- parseSymbol
+     rest <- spaceThen parseSymbols <|> (return [])
+     return (first : rest)
 
 parseRule :: GenParser Char st TRule
 parseRule = 
   do st <- many alphaNum
-     char ' '
-     sym <- oneOf "01_"
-     char ' '
-     sym' <- oneOf "01_"
-     char ' '
-     dir <- oneOf "RLN"
-     char ' '
-     st' <- many alphaNum
-     eol
-     return $ TRule st (symbolFromStr [sym]) (symbolFromStr [sym']) (directionFromStr [dir]) st'
+     sym <- spaceThen $ parseSymbol
+     sym' <- spaceThen $ parseSymbol
+     dir <- spaceThen $ parseDirection
+     st' <- spaceThen $ many alphaNum
+     (>>) eol $ return $ TRule st sym sym' dir st'
 
 parseRulefile :: String -> Either ParseError (Tape TSymbol, Ruleset)
 parseRulefile input = parse ruleFile "(unknown)" input

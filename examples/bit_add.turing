@@ -1,0 +1,9 @@
+1 1
+A 0 0 R Z
+A 1 1 R C
+Z 0 0 R H
+Z 1 1 L N
+C 0 1 L N
+C 1 0 L Y
+N _ 0 R H
+Y _ 1 R H
