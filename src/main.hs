@@ -6,13 +6,21 @@ import System.Environment
 import System.Directory
 import System.FilePath as Path
 
+wrapGet :: [a] -> Int -> a
+wrapGet xs n =
+  if length xs > n
+  then if n < 0
+       then xs !! ((length xs) + n)
+       else xs !! n
+  else xs !! (n `mod` (length xs))
+
 ruleMatches :: String -> TSymbol -> TRule -> Bool
 ruleMatches st sym (TRule st' TNot _ _ _) = st' == st
 ruleMatches st sym (TRule st' sym' _ _ _) = st' == st && sym' == sym
 
 getMove :: Ruleset -> THead -> TMove
 getMove rs (THead st tape n) =
-  let TRule _ _ sym' dir st' = (filter (ruleMatches st (tape !! n)) rs) !! 0
+  let TRule _ _ sym' dir st' = (filter (ruleMatches st (wrapGet tape n)) rs) !! 0
   in TMove st' dir sym'
 
 moveDirection :: TDirection -> Int -> Int
