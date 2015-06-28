@@ -2,6 +2,9 @@ module Main where
 
 import Parse
 import Types
+import System.Environment
+import System.Directory
+import System.FilePath as Path
 
 ruleMatches :: String -> TSymbol -> TRule -> Bool
 ruleMatches st sym (TRule st' TNot _ _ _) = st' == st
@@ -36,6 +39,8 @@ simulateMachine (Right (tape, table)) =
 simulateMachine (Left error) = []
 
 main =
-  do ruleFile <- readFile "../examples/bit_add.turing"
-     putStrLn . show . take 10 $ simulateMachine (parseRulefile ruleFile)
+  do (filename:_) <- getArgs
+     workingDir <- getCurrentDirectory
+     ruleFile <- readFile (Path.combine workingDir filename)
+     putStrLn . show $ simulateMachine (parseRulefile ruleFile)
 
