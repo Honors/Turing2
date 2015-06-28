@@ -1,4 +1,4 @@
-# Turing-Church
+# Turing2
 
 A Turing machine simulator written in Haskell.
 
